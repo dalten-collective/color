@@ -7,7 +7,7 @@
       [%hsl hsl]
       [%hex @ux]
       [%web @t]
-      [%all rgb hsl @ux]
+      [%all rgb hsl @ux @t]
   ==
 ++  color
   |_  $:  =ned
@@ -17,8 +17,8 @@
       ==
   +*  lo  .
       ra  ~(. rd %n)
-  ++  rax  |=([a=@rd b=@rd] ?:((gth:ra a b) a b))       ::  +rax: max @rd
-  ++  rin  |=([a=@rd b=@rd] ?:((gth:ra a b) b a))       ::  +rin: min @rd
+  ++  rax  |=(l=(list @rd) (rear (sort l lth)))         ::  +rax: max @rd
+  ++  rin  |=(l=(list @rd) (rear (sort l gth)))         ::  +rin: min @rd
   ++  rud  |=(r=@rd `@ud`(abs:si (need (toi:ra r))))    ::  +rud: @rd to @ud
   ++  rod                                               ::  +rod: @rd modulo
     |=  [a=@rd b=@rd]
@@ -89,7 +89,7 @@
   ++  lo-abet
     ^-  get
     ?-  ned
-      %all  all+[rgb hsl hex]
+      %all  all+[rgb hsl hex lo-cord]
       %rgb  rgb+rgb
       %hsl  hsl+hsl
       %hex  hex+hex
@@ -146,35 +146,29 @@
     ^+  lo
     =+  [r=(fiv r.rgb) g=(fiv g.rgb) b=(fiv b.rgb)]
     ?:  &(=(0 r) =(0 g) =(0 b))  lo(hsl [.~0 .~0 .~0])
-    =+  max=(roll `(list @rd)`~[r g b] rax)
-    =+  min=(roll `(list @rd)`~[r g b] rin)
+    =+  max=(rax ~[r g b])
+    =+  min=(rin ~[r g b])
     =+  lum=(div:ra (add:ra max min) .~2)
+    ~&  [%rgb [r g b] %min min %max max %lum lum]
     =;  [sat=@rd hue=@rd]
       lo(hsl [hue sat lum])
-    :-  ?.  (gth:ra (div:ra (add:ra min max) .~2) .~5)
+    :-  =-  ?:((sig:ra -) - (mul:ra .~-1 -))
+        ?.  (gth:ra lum .~5)
           (div:ra (sub:ra max min) (add:ra max min))
-        (div:ra (sub:ra max min) (add .~2 (sub:ra max min)))
+        (div:ra (sub:ra max min) (sub:ra .~2 (sub:ra max min)))
+    ::  =(max min) = .~0
+    ::  red = (g - b) / (max - min) * .~60
+    ::  green = [.~2 + (b - r) / (max - min)] * .~60
+    ::  blue  = [.~4 + (r - g) / (max - min)] * .~60
+    =-  ?:((sig:ra -) - (mul:ra .~-1 -))
     ?:  =(min max)  .~0
     ?:  =(max r)
-      ::  red = (g - b) / (max - min) * 60
-      ?:  (gth:ra g b)
-        (mul:ra (div:ra (sub:ra g b) (sub:ra max min)) .~60)
-      %+  sub:ra  .~360 
-      (mul:ra (div:ra (sub:ra b g) (sub:ra max min)) .~60)
+      (mul:ra .~60 (div:ra (sub:ra g b) (sub:ra max min)))
     ?:  =(max g)
-      ::  green = [2 + (b - r) / (max - min)] * 60
-      ?:  (gth:ra b r)
-        %+  add:ra  .~2
-        (mul:ra (div:ra (sub:ra b r) (sub:ra max min)) .~60)
-      %+  sub:ra  .~360  %+  add:ra  .~2
-      (mul:ra (div:ra (sub:ra r b) (sub:ra max min)) .~60)
+      %+  mul:ra  .~60
+      (add:ra .~2 (div:ra (sub:ra b r) (sub:ra max min)))
     ?>  =(max b)
-    ::  blue  = [4 + (r - g) / (max - min)] * 60
-    ?:  (gth:ra b r)
-      %+  add:ra  .~4
-      (mul:ra (div:ra (sub:ra b r) (sub:ra max min)) .~60)
-    %+  sub:ra  .~360
-    %+  add:ra  .~4
-    (mul:ra (div:ra (sub:ra r b) (sub:ra max min)) .~60)
+    %+  mul:ra  .~60
+    (add:ra .~4 (div:ra (sub:ra r g) (sub:ra max min)))
   --
 --
